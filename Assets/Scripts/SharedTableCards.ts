@@ -1,4 +1,4 @@
-﻿import { Interactable } from "SpectaclesInteractionKit.lspkg/Components/Interaction/Interactable/Interactable"
+import { Interactable } from "SpectaclesInteractionKit.lspkg/Components/Interaction/Interactable/Interactable"
 import { InteractableManipulation } from "SpectaclesInteractionKit.lspkg/Components/Interaction/InteractableManipulation/InteractableManipulation"
 import { InteractorEvent } from "SpectaclesInteractionKit.lspkg/Core/Interactor/InteractorEvent"
 import animate from "SpectaclesInteractionKit.lspkg/Utils/animate"
@@ -106,6 +106,7 @@ export class SharedTableCards extends BaseScriptComponent {
       this.activeColor = this.topCard.split(" ")[0]
     }
     this.createTableDisplay()
+    this.updateDiscardFace(this.topCard)
     for (const text of initial) this.hand.push(this.createCard(text, false))
     this.layoutHand(false)
     this.refresh()
@@ -257,7 +258,7 @@ export class SharedTableCards extends BaseScriptComponent {
     drawInteractable.targetingMode = 3
     drawInteractable.onTriggerStart.add(() => this.drawForPlayer())
     const statusObject = this.createFollowObject("Game Turn Indicator")
-    statusObject.getTransform().setLocalPosition(new vec3(0, 17, -88))
+    statusObject.getTransform().setLocalPosition(new vec3(0, 18, -88))
     this.statusLabel = statusObject.createComponent("Component.Text3D") as Text3D
     this.statusLabel.mainMaterial = this.textMaterial
     this.statusLabel.font = CARD_FONT
@@ -272,9 +273,9 @@ export class SharedTableCards extends BaseScriptComponent {
     this.opponentLabel.text = "OPPONENT  |  7 CARDS"
     this.opponentLabel.size = 40
     const activeColorObject = this.createFollowObject("Active Color Marker")
-    activeColorObject.getTransform().setLocalPosition(new vec3(10, 17, -88))
+    activeColorObject.getTransform().setLocalPosition(new vec3(-9, 18, -88))
     activeColorObject.getTransform().setLocalRotation(quat.fromEulerAngles(Math.PI / 2, 0, 0))
-    activeColorObject.getTransform().setLocalScale(new vec3(0.95, 0.18, 0.95))
+    activeColorObject.getTransform().setLocalScale(new vec3(1.15, 0.18, 1.15))
     this.activeColorVisual = activeColorObject.createComponent("Component.RenderMeshVisual") as RenderMeshVisual
     this.activeColorVisual.mesh = this.cardOvalMesh
     this.activeColorVisual.mainMaterial = this.blueMaterial
@@ -515,8 +516,7 @@ export class SharedTableCards extends BaseScriptComponent {
   private commitCard(card: CardData): void {
     const index = this.hand.findIndex((c) => c.id === card.id)
     if (index < 0) return
-    this.topCard = (card.wild ? "WILD" : card.color) + " " + card.value
-    if (!card.wild) this.activeColor = card.color
+    this.setTopCard((card.wild ? "WILD" : card.color) + " " + card.value)
     console.log("[SharedTableCards] committed " + this.topCard + " hand=" + this.hand.length)
     this.updateDiscardFace(this.topCard)
     this.hand.splice(index, 1)
@@ -734,13 +734,13 @@ export class SharedTableCards extends BaseScriptComponent {
       ? playable.filter((text) => text !== "WILD +4")
       : playable
     if (openingOptions.length > 0) {
-      const randomBits = (Math.floor(Math.random() * 0x100000000) ^ (Date.now() >>> 0)) >>> 0
       chosen = openingOptions[Math.floor(this.randomUnit() * openingOptions.length)]
     }
 
     if (!chosen) {
       const drawn = this.drawFromDeck()
       this.opponentHand.push(drawn)
+      this.refresh()
       if (!this.isOpponentPlayLegal(drawn)) {
         this.state = "OPPONENT DRAWS 1"
         this.refresh()
@@ -752,48 +752,111 @@ export class SharedTableCards extends BaseScriptComponent {
 
     if (chosen) this.firstOpponentResponse = false
 
-    const handIndex = this.opponentHand.indexOf(chosen)
-    if (handIndex >= 0) this.opponentHand.splice(handIndex, 1)
-    if (this.opponentHand.length === 0) {
-      this.topCard = chosen
-      this.updateDiscardFace(chosen)
-      this.updateDiscardFace(chosen)
-      this.state = "OPPONENT WINS"
-      this.showAnnouncement("UNO! OPPONENT WINS")
-      this.createRestartPrompt("OPPONENT WINS")
-      this.refresh()
-      return
-    }
-    if (this.opponentHand.length === 1) this.showAnnouncement("OPPONENT UNO!")
+    this.animateOpponentPlay(chosen)
+  }
+
+  private animateOpponentPlay(chosen: string): void {
     const parts = chosen.split(" ")
     const color = parts[0]
     const value = parts.slice(1).join(" ")
-    this.topCard = chosen
-    if (color === "WILD") this.activeColor = this.chooseOpponentColor()
-    else this.activeColor = color
-    this.updateDiscardFace(chosen)
-    this.updateDiscardFace(chosen)
-    console.log("[SharedTableCards] opponent played " + chosen + " active=" + this.activeColor + " opponentHand=" + this.opponentHand.length)
-    this.refresh()
+    const visibleCount = Math.min(this.opponentBacks.length, this.opponentHand.length)
+    const firstVisible = Math.floor((this.opponentBacks.length - visibleCount) / 2)
+    const nextVisibleCount = Math.max(0, visibleCount - 1)
+    const nextFirstVisible = Math.floor((this.opponentBacks.length - nextVisibleCount) / 2)
+    const playedIndex = nextFirstVisible > firstVisible
+      ? firstVisible
+      : firstVisible + visibleCount - 1
+    const source = this.opponentBacks[playedIndex]
+    const sourceTransform = source ? source.getTransform() : null
+    const start = sourceTransform ? sourceTransform.getLocalPosition() : new vec3(0, 8, -99)
+    const playedCard = this.createFollowObject("Opponent Played Card")
+    const transform = playedCard.getTransform()
+    transform.setLocalPosition(start)
+    const face = global.scene.createSceneObject("Opponent Played Card Face")
+    face.setParent(playedCard)
+    face.getTransform().setLocalRotation(quat.fromEulerAngles(Math.PI / 2, 0, 0))
+    face.getTransform().setLocalScale(new vec3(4.3, 1, 6.5))
+    const visual = face.createComponent("Component.RenderMeshVisual") as RenderMeshVisual
+    visual.mesh = this.cardMesh
+    visual.mainMaterial = this.cardBackMaterial
+    const oval = global.scene.createSceneObject("Opponent Played Card Oval")
+    oval.setParent(playedCard)
+    oval.getTransform().setLocalPosition(new vec3(0, 0, 0.32))
+    oval.getTransform().setLocalRotation(quat.fromEulerAngles(Math.PI / 2, 0, 0))
+    oval.getTransform().setLocalScale(new vec3(1.65, 0.08, 2.65))
+    const ovalVisual = oval.createComponent("Component.RenderMeshVisual") as RenderMeshVisual
+    ovalVisual.mesh = this.cardOvalMesh
+    ovalVisual.mainMaterial = this.cardOvalMaterial
+    const labelObject = global.scene.createSceneObject("Opponent Played Card Label")
+    labelObject.setParent(playedCard)
+    labelObject.getTransform().setLocalPosition(new vec3(0, 0, 0.58))
+    const label = labelObject.createComponent("Component.Text3D") as Text3D
+    label.mainMaterial = this.cardInkMaterial
+    label.font = CARD_FONT
+    label.text = "S"
+    label.size = 58
+    label.weight = 800
+    label.horizontalOverflow = HorizontalOverflow.Shrink
 
-    if (value === "+4" || value === "+2") {
-      this.drawTarget = value === "+4" ? 4 : 2
-      this.state = value + " DRAW!"
-      this.drawInProgress = true
-      this.drawCards = 0
-      this.refresh()
-      this.drawOne()
-      return
-    }
-    if (value === "SKIP" || value === "REVERSE") {
-      this.state = "OPPONENT SKIPPED"
-      this.refresh()
-      const delayed = this.createEvent("DelayedCallbackEvent")
-      delayed.bind(() => this.beginOpponentTurn())
-      delayed.reset(0.65)
-      return
-    }
-    this.finishOpponentTurn()
+    this.state = "OPPONENT PLAYS " + chosen
+    this.refresh()
+    if (source) source.enabled = false
+    let revealed = false
+    animate({
+      duration: 0.72,
+      easing: "ease-in-out-quad",
+      update: (t: number) => {
+        const target = this.pilePosition
+        transform.setLocalPosition(new vec3(
+          start.x + (target.x - start.x) * t,
+          start.y + (target.y - start.y) * t + Math.sin(t * Math.PI) * 4.2,
+          start.z + (target.z - start.z) * t
+        ))
+        const faceWidth = t < 0.5 ? 1 - 0.9 * (t * 2) : 0.1 + 0.9 * ((t - 0.5) * 2)
+        transform.setLocalScale(new vec3(faceWidth, 1, 1))
+        if (!revealed && t >= 0.5) {
+          revealed = true
+          visual.mainMaterial = this.materialFor(color)
+          label.text = value === "REVERSE" ? "REV" : value
+          label.size = value.length > 3 ? 42 : value.length > 1 ? 58 : 74
+        }
+      },
+      ended: () => {
+        playedCard.destroy()
+        const handIndex = this.opponentHand.indexOf(chosen)
+        if (handIndex >= 0) this.opponentHand.splice(handIndex, 1)
+        const wildColor = color === "WILD" ? this.chooseOpponentColor() : undefined
+        this.setTopCard(chosen, wildColor)
+        console.log("[SharedTableCards] opponent played " + chosen + " active=" + this.activeColor + " opponentHand=" + this.opponentHand.length)
+        if (this.opponentHand.length === 1) this.showAnnouncement("OPPONENT UNO!")
+
+        if (this.opponentHand.length === 0) {
+          this.state = "OPPONENT WINS"
+          this.showAnnouncement("UNO! OPPONENT WINS")
+          this.createRestartPrompt("OPPONENT WINS")
+          this.refresh()
+          return
+        }
+        if (value === "+4" || value === "+2") {
+          this.drawTarget = value === "+4" ? 4 : 2
+          this.state = value + " DRAW!"
+          this.drawInProgress = true
+          this.drawCards = 0
+          this.refresh()
+          this.drawOne()
+          return
+        }
+        if (value === "SKIP" || value === "REVERSE") {
+          this.state = "OPPONENT SKIPPED"
+          this.refresh()
+          const delayed = this.createEvent("DelayedCallbackEvent")
+          delayed.bind(() => this.beginOpponentTurn())
+          delayed.reset(0.65)
+          return
+        }
+        this.finishOpponentTurn()
+      }
+    })
   }
 
   private isOpponentPlayLegal(text: string): boolean {
@@ -812,6 +875,17 @@ export class SharedTableCards extends BaseScriptComponent {
       if (count > bestCount) { best = color; bestCount = count }
     }
     return best
+  }
+
+  private setTopCard(text: string, wildColor?: string): void {
+    this.topCard = text
+    const cardColor = text.split(" ")[0]
+    if (cardColor === "WILD") {
+      if (wildColor) this.activeColor = wildColor
+    } else {
+      this.activeColor = cardColor
+    }
+    this.updateDiscardFace(text)
   }
 
   private finishOpponentTurn(): void {
@@ -1081,11 +1155,17 @@ export class SharedTableCards extends BaseScriptComponent {
 
   private refresh(): void {
     const selected = this.hand.find((card) => card.id === this.selectedId)
-    if (this.statusLabel) this.statusLabel.text = selected && this.state === "YOUR TURN"
+    const stateText = selected && this.state === "YOUR TURN"
       ? "SELECTED  |  " + selected.color + " " + selected.value
-      : this.drawInProgress ? this.state + "  " + this.drawCards + "/" + this.drawTarget : this.state + "  |  ACTIVE " + this.activeColor
+      : this.drawInProgress ? this.state + "  " + this.drawCards + "/" + this.drawTarget : this.state
+    const wildTop = this.topCard.indexOf("WILD ") === 0
+    const activeHint = this.wildPending
+      ? "CHOOSE COLOR"
+      : wildTop ? "WILD → " + this.activeColor : "PLAY " + this.activeColor
+    if (this.statusLabel) this.statusLabel.text = stateText + "  •  " + activeHint
     if (this.opponentLabel) this.opponentLabel.text = "OPPONENT  •  " + this.opponentHand.length + " CARDS" + (this.drawInProgress ? "  •  DRAW" : "")
-    if (this.activeColorVisual) this.activeColorVisual.mainMaterial = this.materialFor(this.activeColor)
+    const indicatorColor = this.wildPending ? "WILD" : this.activeColor
+    if (this.activeColorVisual) this.activeColorVisual.mainMaterial = this.materialFor(indicatorColor)
     if (this.drawLabel) this.drawLabel.text = "S"
     if (this.drawCountLabel) this.drawCountLabel.text = String(this.drawPile.length)
     const visibleOpponentCards = Math.min(this.opponentBacks.length, this.opponentHand.length)
@@ -1108,6 +1188,7 @@ export class SharedTableCards extends BaseScriptComponent {
   getDrawCards(): number { return this.drawCards }
   getCardCount(): number { return this.hand.length }
 }
+
 
 
 
