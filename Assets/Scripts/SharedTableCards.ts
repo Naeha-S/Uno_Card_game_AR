@@ -439,6 +439,9 @@ export class SharedTableCards extends BaseScriptComponent {
     const parts = text.split(" ")
     const color = parts[0]
     const value = parts.slice(1).join(" ")
+    // The normal discard face is the source of truth for the active color.
+    // Wild cards keep the color chosen in the wild selector.
+    if (color !== "WILD") this.activeColor = color
     if (this.pileVisual) this.pileVisual.mainMaterial = this.materialFor(color)
     if (this.pileLabel) {
       this.pileLabel.text = value === "REVERSE" ? "REV" : value
@@ -490,8 +493,9 @@ export class SharedTableCards extends BaseScriptComponent {
       this.returnCard(card, "CARD RETURNED | DROP ON THE PILE")
       return
     }
-    const valid = card.wild || card.color === this.activeColor || card.value === this.topCard.split(" ").slice(1).join(" ")
+    const valid = this.isPlayable(card.color, card.value, card.wild)
     if (!valid) {
+      console.log("[SharedTableCards] invalid play card=" + card.color + " " + card.value + " top=" + this.topCard + " shown=" + (this.pileColorLabel ? this.pileColorLabel.text : "?") + " " + (this.pileLabel ? this.pileLabel.text : "?") + " active=" + this.activeColor)
       this.returnCard(card, "INVALID PLAY | CARD RETURNED")
       return
     }
@@ -863,7 +867,7 @@ export class SharedTableCards extends BaseScriptComponent {
     const parts = text.split(" ")
     const color = parts[0]
     const value = parts.slice(1).join(" ")
-    return color === "WILD" || color === this.activeColor || value === this.topCard.split(" ").slice(1).join(" ")
+    return this.isPlayable(color, value, color === "WILD")
   }
 
   private chooseOpponentColor(): string {
@@ -1036,7 +1040,24 @@ export class SharedTableCards extends BaseScriptComponent {
   }
 
   private isLegalPlayerCard(card: CardData): boolean {
-    return card.wild || card.color === this.activeColor || card.value === this.topCard.split(" ").slice(1).join(" ")
+    return this.isPlayable(card.color, card.value, card.wild)
+  }
+
+  private isPlayable(color: string, value: string, wild: boolean): boolean {
+    if (wild) return true
+
+    const shownColor = this.pileColorLabel ? this.pileColorLabel.text : ""
+    const turnColor = shownColor === "WILD" || !shownColor
+      ? this.activeColor
+      : shownColor === "GOLD" ? "YELLOW" : shownColor
+    if (color.trim().toUpperCase() === turnColor.trim().toUpperCase()) return true
+
+    const shownValue = this.pileLabel ? this.pileLabel.text : ""
+    const topValue = shownValue === "REV"
+      ? "REVERSE"
+      : shownValue || this.topCard.split(" ").slice(1).join(" ")
+    const normalize = (candidate: string): string => candidate.trim().toUpperCase().replace(/\s+/g, " ")
+    return normalize(value) === normalize(topValue)
   }
 
   private canPlayerPlay(): boolean {
