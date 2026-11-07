@@ -1,0 +1,88 @@
+- !<AssetImportMetadata/bc2c0d55-12e3-4ad5-934d-497aa261c9e5>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 45159051-4b8f-4fca-8875-23b2721a5d42
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 45159051-4b8f-4fca-8875-23b2721a5d42
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 143a06f6-8c73-4497-b1db-61d0cf42ddf3
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/143a06f6-8c73-4497-b1db-61d0cf42ddf3>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  VersionPrerelease: ""
+  UpdateOrder: 0
+  ComponentUid: be3f15a8-eead-4b56-b4bf-1b6f945377fb
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    blueMaterial: false
+    cameraObject: false
+    cardBackMaterial: false
+    cardInkMaterial: false
+    cardMesh: false
+    cardOvalMaterial: false
+    cardOvalMesh: false
+    cardShadowMaterial: false
+    display: false
+    greenMaterial: false
+    redMaterial: false
+    tableBackdropMaterial: false
+    textMaterial: false
+    wildMaterial: false
+    yellowMaterial: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - display: !<reference.Text3D> 00000000-0000-0000-0000-000000000000
+      cameraObject: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      cardMesh: !<reference.RenderMesh> 00000000-0000-0000-0000-000000000000
+      redMaterial: !<reference.Material> 00000000-0000-0000-0000-000000000000
+      blueMaterial: !<reference.Material> 00000000-0000-0000-0000-000000000000
+      greenMaterial: !<reference.Material> 00000000-0000-0000-0000-000000000000
+      yellowMaterial: !<reference.Material> 00000000-0000-0000-0000-000000000000
+      wildMaterial: !<reference.Material> 00000000-0000-0000-0000-000000000000
+      textMaterial: !<reference.Material> 00000000-0000-0000-0000-000000000000
+      cardInkMaterial: !<reference.Material> 00000000-0000-0000-0000-000000000000
+      cardOvalMesh: !<reference.RenderMesh> 00000000-0000-0000-0000-000000000000
+      cardOvalMaterial: !<reference.Material> 00000000-0000-0000-0000-000000000000
+      cardBackMaterial: !<reference.Material> 00000000-0000-0000-0000-000000000000
+      cardShadowMaterial: !<reference.Material> 00000000-0000-0000-0000-000000000000
+      tableBackdropMaterial: !<reference.Material> 00000000-0000-0000-0000-000000000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - // @input Component.Text3D display
+    - // @input SceneObject cameraObject
+    - // @input Asset.RenderMesh cardMesh
+    - // @input Asset.Material redMaterial
+    - // @input Asset.Material blueMaterial
+    - // @input Asset.Material greenMaterial
+    - // @input Asset.Material yellowMaterial
+    - // @input Asset.Material wildMaterial
+    - // @input Asset.Material textMaterial
+    - // @input Asset.Material cardInkMaterial
+    - // @input Asset.RenderMesh cardOvalMesh
+    - // @input Asset.Material cardOvalMaterial
+    - // @input Asset.Material cardBackMaterial
+    - // @input Asset.Material cardShadowMaterial
+    - // @input Asset.Material tableBackdropMaterial

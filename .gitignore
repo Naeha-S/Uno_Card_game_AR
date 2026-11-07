@@ -1,0 +1,28 @@
+﻿# Lens Studio generated and local state
+/Cache/
+/Support/
+/Workspaces/
+/PluginsUserPreferences/
+*.esproj.*.lock
+ls-live-instance.json
+.virtual-scene.json
+
+# Credentials and local editor connections
+spk_debug_key.pem
+.mcp.json
+.codex/
+.claude/
+.cursor/
+.vscode/
+.clad/
+
+# Local tooling and copied skill pack
+.font_tmp/
+ls-extensions/
+agent/
+skills-lock.json
+CLAUDE.md
+AGENTS.md
+
+# Local LEAF test runner plugin
+/Plugins/
